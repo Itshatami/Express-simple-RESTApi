@@ -1,5 +1,5 @@
 import express from "express";
-import { query, validationResult, body } from "express-validator";
+import { query, validationResult, body, matchedData } from "express-validator";
 
 const app = express();
 
@@ -73,25 +73,31 @@ app.get("/api/users/:id", (req, res) => {
 // Post create user
 app.post(
   "/api/users",
-  body("username")
-    .notEmpty()
-    .withMessage("username must not be empty")
-    .isLength({ min: 2, max: 32 })
-    .withMessage("username must be min 2 char & max 32 char length")
-    .isString()
-    .withMessage("username must be string"),
-  body("displayName")
-    .notEmpty()
-    .withMessage("displayName Is Empty!")
-    .isString()
-    .withMessage("Must Be String!"),
+  [
+    body("username")
+      .notEmpty()
+      .withMessage("username must not be empty")
+      .isLength({ min: 2, max: 32 })
+      .withMessage("username must be min 2 char & max 32 char length")
+      .isString()
+      .withMessage("username must be string"),
+    body("displayName")
+      .notEmpty()
+      .withMessage("displayName Is Empty!")
+      .isString()
+      .withMessage("Must Be String!"),
+  ],
   (req, res) => {
+    // Apply Express-validator
     const result = validationResult(req);
-    console.log(result);
-    const { body } = req;
+    // Check If Error
+    if (!result.isEmpty())
+      return res.status(400).send({ errors: result.array() });
+
+    const data = matchedData(req);
     const newUser = {
       id: mockUsers[mockUsers.length - 1].id + 1,
-      ...body,
+      ...data,
     };
     if (!newUser) return res.status(400).send({ msg: "didnt created" });
     mockUsers.push(newUser);
