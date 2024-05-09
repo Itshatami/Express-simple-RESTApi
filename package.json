@@ -1,6 +1,7 @@
 {
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "express-validator": "^7.0.1"
   },
   "type": "module",
   "scripts": {
@@ -9,7 +10,6 @@
   "name": "sandbox",
   "version": "1.0.0",
   "main": "index.js",
-  "devDependencies": {},
   "keywords": [],
   "author": "",
   "license": "ISC",

@@ -1,4 +1,5 @@
 import express from "express";
+import { query, validationResult, body } from "express-validator";
 
 const app = express();
 
@@ -13,23 +14,51 @@ const mockUsers = [
   { id: 6, username: "zivar", displayName: "Zivar" },
 ];
 
-app.use(express.json());
+const loggerMiddleware = (req, res, next) => {
+  console.log(`${req.method} - ${req.url}`);
+  next();
+};
 
-app.get("/", (req, res) => {
+app.use(express.json());
+app.use(loggerMiddleware, (req, res, next) => {
+  console.log("logger 2");
+  next();
+});
+
+app.get("/", loggerMiddleware, (req, res) => {
   res.status(201).send({ message: "hello" });
 });
 
+// We Can Write Middlewares like this
+// app.get("/", (req, res, next) => {
+//     console.log(`${req.method} - ${req.url}`);
+//   },
+//   (req, res) => {
+//     res.status(201).send({ message: "hello" });
+//   }
+// );
+
 // GET all users
-app.get("/api/users", (req, res) => {
-  console.log(req.query);
-  const {
-    query: { filter, value },
-  } = req;
-  // if filter exist
-  if (filter && value)
-    return res.send(mockUsers.filter((user) => user[filter].includes(value)));
-  return res.send(mockUsers);
-});
+app.get(
+  "/api/users",
+  query("filter")
+    .isString()
+    .withMessage("Must Be String")
+    .notEmpty()
+    .isLength({ min: 2 })
+    .withMessage("Must Be Over 2 Char"),
+  (req, res) => {
+    const result = validationResult(req);
+    console.log(result);
+    const {
+      query: { filter, value },
+    } = req;
+    // if filter exist
+    if (filter && value)
+      return res.send(mockUsers.filter((user) => user[filter].includes(value)));
+    return res.send(mockUsers);
+  }
+);
 
 // GET single user
 app.get("/api/users/:id", (req, res) => {
@@ -42,16 +71,33 @@ app.get("/api/users/:id", (req, res) => {
 });
 
 // Post create user
-app.post("/api/users", (req, res) => {
-  const { body } = req;
-  const newUser = {
-    id: mockUsers[mockUsers.length - 1].id + 1,
-    ...body,
-  };
-  if (!newUser) return res.status(400).send({ msg: "didnt created" });
-  mockUsers.push(newUser);
-  return res.status(201).send(newUser);
-});
+app.post(
+  "/api/users",
+  body("username")
+    .notEmpty()
+    .withMessage("username must not be empty")
+    .isLength({ min: 2, max: 32 })
+    .withMessage("username must be min 2 char & max 32 char length")
+    .isString()
+    .withMessage("username must be string"),
+  body("displayName")
+    .notEmpty()
+    .withMessage("displayName Is Empty!")
+    .isString()
+    .withMessage("Must Be String!"),
+  (req, res) => {
+    const result = validationResult(req);
+    console.log(result);
+    const { body } = req;
+    const newUser = {
+      id: mockUsers[mockUsers.length - 1].id + 1,
+      ...body,
+    };
+    if (!newUser) return res.status(400).send({ msg: "didnt created" });
+    mockUsers.push(newUser);
+    return res.status(201).send(newUser);
+  }
+);
 
 // PUT update a user
 app.put("/api/users/:id", (req, res) => {
