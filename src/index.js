@@ -1,5 +1,13 @@
 import express from "express";
-import { query, validationResult, body, matchedData } from "express-validator";
+import {
+  validationResult,
+  matchedData,
+  checkSchema,
+} from "express-validator";
+import {
+  creaetUserValidationSchema,
+  getUsersValidationSchema,
+} from "./utils/validationSchemas.js";
 
 const app = express();
 
@@ -39,26 +47,17 @@ app.get("/", loggerMiddleware, (req, res) => {
 // );
 
 // GET all users
-app.get(
-  "/api/users",
-  query("filter")
-    .isString()
-    .withMessage("Must Be String")
-    .notEmpty()
-    .isLength({ min: 2 })
-    .withMessage("Must Be Over 2 Char"),
-  (req, res) => {
-    const result = validationResult(req);
-    console.log(result);
-    const {
-      query: { filter, value },
-    } = req;
-    // if filter exist
-    if (filter && value)
-      return res.send(mockUsers.filter((user) => user[filter].includes(value)));
-    return res.send(mockUsers);
-  }
-);
+app.get("/api/users", checkSchema(getUsersValidationSchema), (req, res) => {
+  const result = validationResult(req);
+  console.log(result);
+  const {
+    query: { filter, value },
+  } = req;
+  // if filter exist
+  if (filter && value)
+    return res.send(mockUsers.filter((user) => user[filter].includes(value)));
+  return res.send(mockUsers);
+});
 
 // GET single user
 app.get("/api/users/:id", (req, res) => {
@@ -71,39 +70,56 @@ app.get("/api/users/:id", (req, res) => {
 });
 
 // Post create user
-app.post(
-  "/api/users",
-  [
-    body("username")
-      .notEmpty()
-      .withMessage("username must not be empty")
-      .isLength({ min: 2, max: 32 })
-      .withMessage("username must be min 2 char & max 32 char length")
-      .isString()
-      .withMessage("username must be string"),
-    body("displayName")
-      .notEmpty()
-      .withMessage("displayName Is Empty!")
-      .isString()
-      .withMessage("Must Be String!"),
-  ],
-  (req, res) => {
-    // Apply Express-validator
-    const result = validationResult(req);
-    // Check If Error
-    if (!result.isEmpty())
-      return res.status(400).send({ errors: result.array() });
+// app.post(
+//   "/api/users",
+//   [
+//     body("username")
+//       .notEmpty()
+//       .withMessage("username must not be empty")
+//       .isLength({ min: 2, max: 32 })
+//       .withMessage("username must be min 2 char & max 32 char length")
+//       .isString()
+//       .withMessage("username must be string"),
+//     body("displayName")
+//       .notEmpty()
+//       .withMessage("displayName Is Empty!")
+//       .isString()
+//       .withMessage("Must Be String!"),
+//   ],
+//   (req, res) => {
+//     // Apply Express-validator
+//     const result = validationResult(req);
+//     // Check If Error
+//     if (!result.isEmpty())
+//       return res.status(400).send({ errors: result.array() });
 
-    const data = matchedData(req);
-    const newUser = {
-      id: mockUsers[mockUsers.length - 1].id + 1,
-      ...data,
-    };
-    if (!newUser) return res.status(400).send({ msg: "didnt created" });
-    mockUsers.push(newUser);
-    return res.status(201).send(newUser);
-  }
-);
+//     const data = matchedData(req);
+//     const newUser = {
+//       id: mockUsers[mockUsers.length - 1].id + 1,
+//       ...data,
+//     };
+//     if (!newUser) return res.status(400).send({ msg: "didnt created" });
+//     mockUsers.push(newUser);
+//     return res.status(201).send(newUser);
+//   }
+// );
+
+app.post("/api/users", checkSchema(creaetUserValidationSchema), (req, res) => {
+  // Apply Express-validator
+  const result = validationResult(req);
+  // Check If Error
+  if (!result.isEmpty())
+    return res.status(400).send({ errors: result.array() });
+
+  const data = matchedData(req);
+  const newUser = {
+    id: mockUsers[mockUsers.length - 1].id + 1,
+    ...data,
+  };
+  if (!newUser) return res.status(400).send({ msg: "didnt created" });
+  mockUsers.push(newUser);
+  return res.status(201).send(newUser);
+});
 
 // PUT update a user
 app.put("/api/users/:id", (req, res) => {
