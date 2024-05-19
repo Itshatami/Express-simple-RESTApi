@@ -1,5 +1,3 @@
-import { query } from "express-validator";
-
 export const creaetUserValidationSchema = {
   username: {
     isLength: {
