@@ -1,34 +1,31 @@
 import express from "express";
-import usersRoute from "./routes/users.js";
-import productsRouter from "./routes/products.js";
+import routes from "./routes/routes.js";
+import cookieParser from "cookie-parser";
+import session from "express-session";
 
 const app = express();
-
 const PORT = process.env.PORT || 3000;
 
-const loggerMiddleware = (req, res, next) => {
-  console.log(`${req.method} - ${req.url}`);
-  next();
-};
-
 app.use(express.json());
+app.use(cookieParser("main-cookie-secret"));
+app.use(
+  session({
+    secret: "app-session-secret",
+    saveUninitialized: false,
+    resave: false,
+    cookie: {
+      maxAge: 60000 * 60,
+    },
+  })
+);
+app.use(routes);
 
-// app.use(loggerMiddleware, (req, res, next) => {
-//   console.log("logger 2");
-//   next();
-// });
-
-// We Can Write Middlewares like this
-// app.get("/", (req, res, next) => {
-//     console.log(`${req.method} - ${req.url}`);
-//   },
-//   (req, res) => {
-//     res.status(201).send({ message: "hello" });
-//   }
-// );
-
-app.use("/api/users", usersRoute);
-
-app.use("/api/products", productsRouter);
+app.get("/", (req, res) => {
+  console.log(req.session);
+  console.log(req.session.id);
+  req.session.visited = true;  
+  res.cookie("username", "Alireza", { maxAge: 60000 * 60, signed: true });
+  res.status(201).send({ msg: "Hii There." });
+});
 
 app.listen(PORT, () => console.log(`live on ${PORT}`));
